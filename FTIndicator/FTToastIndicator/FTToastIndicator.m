@@ -28,7 +28,7 @@
 
 @interface FTToastIndicator ()
 
-@property (nonatomic, weak)UIWindow *backgroundWindow;
+@property (nonatomic, strong)UIWindow *backgroundWindow;
 @property (nonatomic, strong)FTToastIndicatorView *toastView;
 @property (nonatomic, assign)UIBlurEffectStyle indicatorStyle;
 @property (nonatomic, strong)NSString *toastMessage;
@@ -219,15 +219,25 @@
 {
     self.isDuringAnimation = YES;
     self.toastView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 0.2, 0.2);
+//    [UIView animateWithDuration:kFTToastDefaultAnimationDuration
+//                          delay:0
+//         usingSpringWithDamping:0.5
+//          initialSpringVelocity:0
+//                        options:UIViewAnimationOptionCurveEaseIn
+//                     animations:^{
+//                         self.toastView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, 1);
+//                     } completion:^(BOOL finished) {
+//                         self.isDuringAnimation = NO;
+//                         if (!self.isCurrentlyOnScreen) {
+//                             [self startDismissTimer];
+//                         }
+//                         self.isCurrentlyOnScreen = YES;
+//                     }];
     [UIView animateWithDuration:kFTToastDefaultAnimationDuration
                           delay:0
-         usingSpringWithDamping:0.5
-          initialSpringVelocity:0
-                        options:UIViewAnimationOptionCurveEaseIn
+                        options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
-                         
                          self.toastView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, 1);
-                         
                      } completion:^(BOOL finished) {
                          self.isDuringAnimation = NO;
                          if (!self.isCurrentlyOnScreen) {
@@ -239,14 +249,13 @@
 
 - (void)dismissingToastView
 {
+    [self.toastView.layer removeAllAnimations];
     self.isDuringAnimation = YES;
     [UIView animateWithDuration:kFTToastDefaultAnimationDuration
                           delay:0
-                        options:UIViewAnimationOptionCurveEaseIn
+                        options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
                      animations:^{
-                         
                          self.toastView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 0.2, 0.2);
-                         
                      } completion:^(BOOL finished) {
                          self.isDuringAnimation = NO;
                          self.isCurrentlyOnScreen = NO;

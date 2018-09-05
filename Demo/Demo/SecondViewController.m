@@ -20,7 +20,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    [FTProgressIndicator showProgressWithmessage:nil];
+    [FTProgressIndicator showProgressWithMessage:nil];
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         
@@ -34,14 +34,14 @@
             [FTProgressIndicator dismiss];
         });
     });
-    
 }
+
 - (IBAction)addButtonTapped:(UIBarButtonItem *)sender
 {
     
     // do any test you want
     
-    [FTProgressIndicator showProgressWithmessage:@"Uploading..." userInteractionEnable:NO];
+    [FTProgressIndicator showProgressWithMessage:@"Uploading..." userInteractionEnable:YES];
     
     [self.view endEditing:YES];
 

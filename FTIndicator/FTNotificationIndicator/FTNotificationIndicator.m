@@ -21,6 +21,7 @@
 #define kFTNotificationDefaultMessageFont               [UIFont systemFontOfSize:13]
 #define kFTNotificationDefaultTextColor                 [UIColor blackColor]
 #define kFTNotificationDefaultTextColor_ForDarkStyle    [UIColor whiteColor]
+#define kFTNotificationDefaultDismissTime				(2.0f)
 
 #define kFTScreenWidth    [UIScreen mainScreen].bounds.size.width
 #define kFTScreenHeight   [UIScreen mainScreen].bounds.size.height
@@ -29,7 +30,7 @@
 
 @interface FTNotificationIndicator ()
 
-@property (nonatomic, assign)UIWindow *backgroundWindow;
+@property (nonatomic, strong)UIWindow *backgroundWindow;
 @property (nonatomic, strong)FTNotificationIndicatorView *notificationView;
 @property (nonatomic, assign)UIBlurEffectStyle indicatorStyle;
 @property (nonatomic, strong)UIImage *notificationImage;
@@ -40,6 +41,7 @@
 @property (nonatomic, assign)BOOL shouldAutoDismiss;
 @property (nonatomic, copy, nullable) FTNotificationTapHandler tapHandler;
 @property (nonatomic, copy, nullable) FTNotificationCompletion completion;
+@property (nonatomic, assign)NSTimeInterval dismissTime;
 
 @end
 
@@ -60,7 +62,6 @@
 + (void)setNotificationIndicatorStyleToDefaultStyle
 {
     [self sharedInstance].indicatorStyle = UIBlurEffectStyleLight;
-
 }
 
 + (void)setNotificationIndicatorStyle:(UIBlurEffectStyle)style
@@ -109,6 +110,18 @@
     [[self sharedInstance] dismiss];
 }
 
+#pragma mark - Timer
+
++ (void)setDefaultDismissTime:(NSTimeInterval)time
+{
+	[[self sharedInstance] setDismissTime: time];
+}
+
++ (NSTimeInterval)defaultDismissTime
+{
+	return [[self sharedInstance] dismissTime];
+}
+
 #pragma mark - instance methods
 
 - (instancetype)init
@@ -119,6 +132,7 @@
                                                  selector:@selector(onChangeStatusBarOrientationNotification:)
                                                      name:UIApplicationDidChangeStatusBarOrientationNotification
                                                    object:nil];
+		self.dismissTime = kFTNotificationDefaultDismissTime;
     }
     return self;
 }
@@ -233,7 +247,7 @@
     if (!self.shouldAutoDismiss) {
         return;
     }
-    CGFloat timeInterval = MAX(self.notificationMessage.length * 0.04 + 0.5, 2.0);
+    CGFloat timeInterval = MAX(self.notificationMessage.length * 0.04 + 0.5, _dismissTime);
     _dismissTimer = [NSTimer scheduledTimerWithTimeInterval:timeInterval
                                                      target:self
                                                    selector:@selector(dismissingNotificationtView)
@@ -251,15 +265,24 @@
 
 - (void)startShowingNotificationView
 {
+//    [UIView animateWithDuration:kFTNotificationDefaultAnimationDuration
+//                          delay:0
+//         usingSpringWithDamping:0.5
+//          initialSpringVelocity:0
+//                        options:UIViewAnimationOptionCurveEaseIn
+//                     animations:^{
+//                         [self.notificationView setFrame:CGRectMake(0,0,kFTScreenWidth,self.notificationView.frame.size.height)];
+//                     } completion:^(BOOL finished) {
+//                         if (!self.isCurrentlyOnScreen) {
+//                             [self startDismissTimer];
+//                         }
+//                         self.isCurrentlyOnScreen = YES;
+//                     }];
     [UIView animateWithDuration:kFTNotificationDefaultAnimationDuration
                           delay:0
-         usingSpringWithDamping:0.5
-          initialSpringVelocity:0
-                        options:UIViewAnimationOptionCurveEaseIn
+                        options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
-                         
                          [self.notificationView setFrame:CGRectMake(0,0,kFTScreenWidth,self.notificationView.frame.size.height)];
-                         
                      } completion:^(BOOL finished) {
                          if (!self.isCurrentlyOnScreen) {
                              [self startDismissTimer];
@@ -274,13 +297,12 @@
 
 - (void)dismissingNotificationtViewByTap:(BOOL)tap
 {
+    [self.notificationView.layer removeAllAnimations];
     [UIView animateWithDuration:kFTNotificationDefaultAnimationDuration
                           delay:0
-                        options:UIViewAnimationOptionCurveEaseIn
+                        options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
                      animations:^{
-                         
                          [self.notificationView setFrame:CGRectMake(0,- (self.notificationView.frame.size.height),kFTScreenWidth,(self.notificationView.frame.size.height))];
-                         
                      } completion:^(BOOL finished) {
                          self.isCurrentlyOnScreen = NO;
                          [self.notificationView removeFromSuperview];

@@ -29,16 +29,16 @@
 
 @interface FTProgressIndicator ()
 
-@property (nonatomic, weak)UIWindow *backgroundWindow;
-@property (nonatomic, strong)FTProgressIndicatorView *progressView;
-@property (nonatomic, assign)UIBlurEffectStyle indicatorStyle;
-@property (nonatomic, strong)NSString *progressMessage;
-@property (nonatomic, strong)UIImage *customImage;
-@property (nonatomic, strong)NSTimer *dismissTimer;
-@property (nonatomic, assign)FTProgressIndicatorMessageType  messageType;
-@property (nonatomic, assign)BOOL isDuringAnimation;
-@property (nonatomic, assign)BOOL isCurrentlyOnScreen;
-@property (nonatomic, assign)BOOL userInteractionEnable;
+@property (nonatomic, strong) UIWindow *backgroundWindow;
+@property (nonatomic, strong) FTProgressIndicatorView *progressView;
+@property (nonatomic, assign) UIBlurEffectStyle indicatorStyle;
+@property (nonatomic, strong) NSString *progressMessage;
+@property (nonatomic, strong) UIImage *customImage;
+@property (nonatomic, strong) NSTimer *dismissTimer;
+@property (nonatomic, assign) FTProgressIndicatorMessageType  messageType;
+@property (nonatomic, assign) BOOL isDuringAnimation;
+@property (nonatomic, assign) BOOL isCurrentlyOnScreen;
+@property (nonatomic, assign) BOOL userInteractionEnable;
 
 @end
 
@@ -64,11 +64,11 @@
 {
     [self sharedInstance].indicatorStyle = style;
 }
-+ (void)showProgressWithmessage:(NSString *)message
++ (void)showProgressWithMessage:(NSString *)message
 {
-    [self showProgressWithmessage:message userInteractionEnable:YES];
+    [self showProgressWithMessage:message userInteractionEnable:YES];
 }
-+ (void)showProgressWithmessage:(NSString *)message userInteractionEnable:(BOOL)userInteractionEnable
++ (void)showProgressWithMessage:(NSString *)message userInteractionEnable:(BOOL)userInteractionEnable
 {
     [[self sharedInstance] showProgressWithType:FTProgressIndicatorMessageTypeProgress message:message image:nil userInteractionEnable:userInteractionEnable];
 }
@@ -113,7 +113,6 @@
     [[self sharedInstance] dismiss];
 }
 
-
 #pragma mark - instance methods
 
 - (instancetype)init
@@ -125,7 +124,7 @@
                                                      name:UIApplicationDidChangeStatusBarOrientationNotification
                                                    object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self
-                                                 selector:@selector(onKeyboardWillChangeFrame:)
+                                                 selector:@selector(onKeyboardDidChangeFrame:)
                                                      name:UIKeyboardWillChangeFrameNotification
                                                    object:nil];
     }
@@ -203,7 +202,7 @@
         [self adjustIndicatorFrame];
     }
 }
-- (void)onKeyboardWillChangeFrame:(NSNotification *)notification
+- (void)onKeyboardDidChangeFrame:(NSNotification *)notification
 {
     
     NSDictionary *userInfo = [notification userInfo];
@@ -211,12 +210,12 @@
     NSTimeInterval animationDuration;
     [[userInfo objectForKey:UIKeyboardAnimationDurationUserInfoKey] getValue:&animationDuration];
     CGRect originRect = self.progressView.frame;
-    CGFloat y = (MIN(kFTScreenHeight, keyboardRect.origin.y) - originRect.size.height)/2;
+    originRect.origin.y  = ((MIN(kFTScreenHeight, keyboardRect.origin.y)) - originRect.size.height)/2;
     [UIView animateWithDuration:animationDuration
                           delay:0
                         options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
                      animations:^{
-                         [self.progressView setFrame:CGRectMake(originRect.origin.x, y, originRect.size.width, originRect.size.height)];
+                         [self.progressView setFrame:originRect];
                      }completion:^(BOOL finished) {
                          
                      }];
@@ -228,11 +227,11 @@
         if ([[testWindow class] isEqual:[UIWindow class]] == NO){
             for (UIView *possibleKeyboard in [testWindow subviews]){
                 if ([[possibleKeyboard description] hasPrefix:@"<UIPeripheralHostView"]){
-                    return possibleKeyboard.bounds.size.height;
+                    return kFTScreenHeight - possibleKeyboard.frame.origin.y;
                 }else if ([[possibleKeyboard description] hasPrefix:@"<UIInputSetContainerView"]){
                     for (UIView *hostKeyboard in [possibleKeyboard subviews]){
                         if ([[hostKeyboard description] hasPrefix:@"<UIInputSetHost"]){
-                            return hostKeyboard.frame.size.height;
+                            return kFTScreenHeight - hostKeyboard.frame.origin.y;
                         }
                     }
                 }
@@ -266,34 +265,37 @@
 {
     self.progressView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 0.4, 0.4);
     self.isDuringAnimation = YES;
+	self.isCurrentlyOnScreen = YES;
+	[self startDismissTimer];
+//    [UIView animateWithDuration:kFTProgressDefaultAnimationDuration
+//                          delay:0
+//         usingSpringWithDamping:0.5
+//          initialSpringVelocity:0
+//                        options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
+//                     animations:^{
+//                         self.progressView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, 1);
+//                     } completion:^(BOOL finished) {
+//                         self.isDuringAnimation = NO;
+//                     }];
     [UIView animateWithDuration:kFTProgressDefaultAnimationDuration
                           delay:0
-         usingSpringWithDamping:0.5
-          initialSpringVelocity:0
-                        options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
+                        options:UIViewAnimationOptionCurveEaseOut
                      animations:^{
-                         
                          self.progressView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 1, 1);
-                         
                      } completion:^(BOOL finished) {
                          self.isDuringAnimation = NO;
-                         if (!self.isCurrentlyOnScreen) {
-                             [self startDismissTimer];
-                         }
-                         self.isCurrentlyOnScreen = YES;
                      }];
 }
 
 - (void)dismissingProgressView
 {
+    [self.progressView.layer removeAllAnimations];
     self.isDuringAnimation = YES;
     [UIView animateWithDuration:kFTProgressDefaultAnimationDuration
                           delay:0
                         options:(UIViewAnimationOptionCurveEaseIn | UIViewAnimationOptionAllowUserInteraction)
                      animations:^{
-                         
                          self.progressView.transform = CGAffineTransformScale(CGAffineTransformIdentity, 0.2, 0.2);
-                         
                      } completion:^(BOOL finished) {
                          self.isDuringAnimation = NO;
                          self.isCurrentlyOnScreen = NO;
